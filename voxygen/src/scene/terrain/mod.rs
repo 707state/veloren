@@ -620,7 +620,7 @@ impl SpriteRenderContext {
                 .join()
                 .unwrap();
 
-            let [sprite_col_lights] =
+            let sprite_col_lights =
                 sprite_atlas_texture_data.create_textures(renderer, sprite_atlas_size);
             let sprite_atlas_textures = renderer.sprite_bind_atlas_textures(sprite_col_lights);
 
@@ -734,7 +734,7 @@ impl<V: RectRasterableVol> Terrain<V> {
                     },
                 )
             });
-        let textures = renderer.terrain_bind_atlas_textures(col_lights, kinds);
+        let textures = renderer.terrain_bind_atlas_textures(vec![col_lights, kinds]);
         Ok((atlas, textures))
     }
 

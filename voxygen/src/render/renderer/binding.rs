@@ -97,35 +97,34 @@ impl Renderer {
 
     pub fn figure_bind_atlas_textures(
         &self,
-        col_light: Texture,
+        textures: Vec<Texture>,
     ) -> AtlasTextures<figure::Locals, FigureSpriteAtlasData> {
         self.layouts.global.bind_atlas_textures(
             &self.device,
             &self.layouts.global.figure_sprite_atlas_layout,
-            [col_light],
+            textures,
         )
     }
 
     pub fn terrain_bind_atlas_textures(
         &self,
-        col_light: Texture,
-        kinds: Texture,
+        textures: Vec<Texture>,
     ) -> AtlasTextures<terrain::Locals, TerrainAtlasData> {
         self.layouts.global.bind_atlas_textures(
             &self.device,
             &self.layouts.global.terrain_atlas_layout,
-            [col_light, kinds],
+            textures,
         )
     }
 
     pub fn sprite_bind_atlas_textures(
         &self,
-        col_light: Texture,
+        textures: Vec<Texture>,
     ) -> AtlasTextures<sprite::Locals, FigureSpriteAtlasData> {
         self.layouts.global.bind_atlas_textures(
             &self.device,
             &self.layouts.global.figure_sprite_atlas_layout,
-            [col_light],
+            textures,
         )
     }
 }

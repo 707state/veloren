@@ -314,13 +314,10 @@ pub struct GlobalsLayouts {
 
 /// A type representing a set of textures that have the same atlas layout and
 /// pertain to a greedy voxel structure.
-pub struct AtlasTextures<Locals, S: AtlasData>
-where
-    [(); S::TEXTURES]:,
-{
+pub struct AtlasTextures<Locals, S: AtlasData> {
     pub(super) bind_group: wgpu::BindGroup,
-    pub textures: [Texture; S::TEXTURES],
-    phantom: std::marker::PhantomData<Locals>,
+    pub textures: Vec<Texture>,
+    phantom: std::marker::PhantomData<(Locals, S)>,
 }
 
 pub struct VoxelAtlasLayout<S: AtlasData>(wgpu::BindGroupLayout, PhantomData<S>);
@@ -355,9 +352,8 @@ pub trait AtlasData {
     /// Return blank atlas data upon which texels can be applied.
     fn blank_with_size(sz: Vec2<u16>) -> Self;
 
-    /// Return an array of texture formats and data for each texture layer in
-    /// the atlas.
-    fn as_texture_data(&self) -> [(wgpu::TextureFormat, &[u8]); Self::TEXTURES];
+    /// Return the format and data of each texture layer in the atlas.
+    fn as_texture_data(&self) -> Vec<(wgpu::TextureFormat, &[u8])>;
 
     /// Return a layout entry that corresponds to the texture layers in the
     /// atlas.
@@ -371,49 +367,52 @@ pub trait AtlasData {
         &self,
         renderer: &mut Renderer,
         atlas_size: Vec2<u16>,
-    ) -> [Texture; Self::TEXTURES] {
-        self.as_texture_data().map(|(fmt, data)| {
-            let texture_info = wgpu::TextureDescriptor {
-                label: None,
-                size: wgpu::Extent3d {
-                    width: u32::from(atlas_size.x),
-                    height: u32::from(atlas_size.y),
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: fmt,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                view_formats: &[],
-            };
+    ) -> Vec<Texture> {
+        self.as_texture_data()
+            .into_iter()
+            .map(|(fmt, data)| {
+                let texture_info = wgpu::TextureDescriptor {
+                    label: None,
+                    size: wgpu::Extent3d {
+                        width: u32::from(atlas_size.x),
+                        height: u32::from(atlas_size.y),
+                        depth_or_array_layers: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: fmt,
+                    usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                    view_formats: &[],
+                };
 
-            let sampler_info = wgpu::SamplerDescriptor {
-                label: None,
-                address_mode_u: wgpu::AddressMode::ClampToEdge,
-                address_mode_v: wgpu::AddressMode::ClampToEdge,
-                address_mode_w: wgpu::AddressMode::ClampToEdge,
-                mag_filter: wgpu::FilterMode::Linear,
-                min_filter: wgpu::FilterMode::Linear,
-                mipmap_filter: wgpu::FilterMode::Nearest,
-                border_color: Some(wgpu::SamplerBorderColor::TransparentBlack),
-                ..Default::default()
-            };
+                let sampler_info = wgpu::SamplerDescriptor {
+                    label: None,
+                    address_mode_u: wgpu::AddressMode::ClampToEdge,
+                    address_mode_v: wgpu::AddressMode::ClampToEdge,
+                    address_mode_w: wgpu::AddressMode::ClampToEdge,
+                    mag_filter: wgpu::FilterMode::Linear,
+                    min_filter: wgpu::FilterMode::Linear,
+                    mipmap_filter: wgpu::FilterMode::Nearest,
+                    border_color: Some(wgpu::SamplerBorderColor::TransparentBlack),
+                    ..Default::default()
+                };
 
-            let view_info = wgpu::TextureViewDescriptor {
-                label: None,
-                format: Some(fmt),
-                dimension: Some(wgpu::TextureViewDimension::D2),
-                usage: None,
-                aspect: wgpu::TextureAspect::All,
-                base_mip_level: 0,
-                mip_level_count: None,
-                base_array_layer: 0,
-                array_layer_count: None,
-            };
+                let view_info = wgpu::TextureViewDescriptor {
+                    label: None,
+                    format: Some(fmt),
+                    dimension: Some(wgpu::TextureViewDimension::D2),
+                    usage: None,
+                    aspect: wgpu::TextureAspect::All,
+                    base_mip_level: 0,
+                    mip_level_count: None,
+                    base_array_layer: 0,
+                    array_layer_count: None,
+                };
 
-            renderer.create_texture_with_data_raw(&texture_info, &view_info, &sampler_info, data)
-        })
+                renderer.create_texture_with_data_raw(&texture_info, &view_info, &sampler_info, data)
+            })
+            .collect()
     }
 }
 
@@ -775,8 +774,13 @@ impl GlobalsLayouts {
         &self,
         device: &wgpu::Device,
         layout: &VoxelAtlasLayout<S>,
-        textures: [Texture; S::TEXTURES],
+        textures: Vec<Texture>,
     ) -> AtlasTextures<Locals, S> {
+        assert_eq!(
+            textures.len(),
+            S::TEXTURES,
+            "Number of textures bound does not match the number of texture layers in the atlas",
+        );
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: layout.layout(),

@@ -284,8 +284,8 @@ impl AtlasData for FigureSpriteAtlasData {
         Self { col_lights }
     }
 
-    fn as_texture_data(&self) -> [(wgpu::TextureFormat, &[u8]); Self::TEXTURES] {
-        [(
+    fn as_texture_data(&self) -> Vec<(wgpu::TextureFormat, &[u8])> {
+        vec![(
             wgpu::TextureFormat::Rgba8Unorm,
             bytemuck::cast_slice(self.col_lights.as_slice()),
         )]

@@ -8156,7 +8156,7 @@ impl FigureAtlas {
                 atlas_size.y as i32,
             ))
             .expect("Not yet implemented: allocate new atlas on allocation failure.");
-        let [atlas_textures] = atlas_texture_data.create_textures(renderer, atlas_size);
+        let atlas_textures = atlas_texture_data.create_textures(renderer, atlas_size);
         let atlas_textures = renderer.figure_bind_atlas_textures(atlas_textures);
         let model_len = u32::try_from(opaque.vertices().len())
             .expect("The model size for this figure does not fit in a u32!");
@@ -8209,7 +8209,7 @@ impl FigureAtlas {
                 atlas_size.y as i32,
             ))
             .expect("Not yet implemented: allocate new atlas on allocation failure.");
-        let [col_lights] = atlas_texture_data.create_textures(renderer, atlas_size);
+        let col_lights = atlas_texture_data.create_textures(renderer, atlas_size);
         // TODO: Use `kinds` texture for volume entities
         let atlas_textures = renderer.figure_bind_atlas_textures(col_lights);
         let model_len = u32::try_from(opaque.vertices().len())
